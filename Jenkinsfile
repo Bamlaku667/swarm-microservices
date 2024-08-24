@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
         SWARM_MANAGER_IP = '192.168.0.18'
     }
 
