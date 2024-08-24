@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
         SWARM_MANAGER_IP = '192.168.0.18'
     }
 
@@ -11,6 +12,13 @@ pipeline {
                 checkout scm
             }
         }
+
+        stage('Test Docker') {
+            steps {
+                sh 'docker --version'
+            }
+        }
+
 
         stage('Build Docker Images') {
             steps {
