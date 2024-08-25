@@ -7,7 +7,7 @@ services:
     ports:
       - "3001:3000"
     deploy:
-      replicas: 2
+      replicas: 3
       update_config:
         parallelism: 2
         delay: 10s
@@ -18,7 +18,7 @@ services:
     ports:
       - "3002:3000"
     deploy:
-      replicas: 2
+      replicas: 3
       update_config:
         parallelism: 2
         delay: 10s
@@ -29,7 +29,7 @@ services:
     ports:
       - "3003:3000"
     deploy:
-      replicas: 2
+      replicas: 3
       update_config:
         parallelism: 2
         delay: 10s
