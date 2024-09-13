@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SWARM_MANAGER_IP = '192.168.0.138'
+        DOCKER_HOST = 'tcp://192.168.0.138:2375' // Replace with your Red Hat server IP and port
+        DOCKER_CREDENTIALS_ID = 'docker-hub-credentials' // Jenkins ID for Docker Hub credentials
     }
 
     stages {
@@ -11,13 +12,6 @@ pipeline {
                 checkout scm
             }
         }
-
-        stage('Test Docker') {
-            steps {
-                sh 'docker --version'
-            }
-        }
-
 
         stage('Build Docker Images') {
             steps {
@@ -30,11 +24,24 @@ pipeline {
             }
         }
 
-        stage('Deploy to Swarm') {
+        stage('Push to Registry') {
+            steps {
+                script {
+                    def services = ['auth-service', 'transaction-service', 'user-service']
+                    services.each { service ->
+                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
+                            docker.image("${service}:latest").push('latest')
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Remote Server') {
             steps {
                 script {
                     sh """
-                    docker stack deploy -c docker-compose.yml microservices-stack
+                    docker -H ${DOCKER_HOST} stack deploy -c docker-compose.yml microservices-stack
                     """
                 }
             }
