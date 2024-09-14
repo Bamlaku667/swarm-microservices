@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SWARM_MANAGER_IP = '192.168.0.18'
+        SWARM_MANAGER_IP = '192.168.0.138'
     }
 
     stages {
