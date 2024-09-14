@@ -46,8 +46,15 @@ pipeline {
                 script {
                     def services = ['auth-service', 'transaction-service', 'user-service']
                     services.each { service ->
-                        // Push the images to Docker Hub
-                        sh "docker push ${DOCKERHUB_USERNAME}/${service}:latest"
+                        // Check if the image already exists on Docker Hub
+                        def imageExists = sh(script: "docker pull ${DOCKERHUB_USERNAME}/${service}:latest || true", returnStatus: true) == 0
+                        if (!imageExists) {
+                            echo "Pushing ${DOCKERHUB_USERNAME}/${service}:latest to Docker Hub"
+                            // Push the image only if it doesn't exist
+                            sh "docker push ${DOCKERHUB_USERNAME}/${service}:latest"
+                        } else {
+                            echo "Image ${DOCKERHUB_USERNAME}/${service}:latest already exists, skipping push"
+                        }
                     }
                 }
             }
