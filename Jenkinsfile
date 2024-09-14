@@ -18,7 +18,7 @@ pipeline {
                 script {
                     def services = ['auth-service', 'transaction-service', 'user-service']
                     services.each { service ->
-                        docker.build("${service}:latest", "./${service}")
+                        docker.build("${service}:latest", "./${service}", "--no-cache .")
                     }
                 }
             }
