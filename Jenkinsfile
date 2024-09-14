@@ -34,9 +34,9 @@ pipeline {
 
         stage('Login to Docker Hub') {
             steps {
-                // Use stored credentials for Docker Hub login
+                // Use stored credentials for Docker Hub login without interpolation
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-                    sh "echo ${DOCKERHUB_PASS} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+                    sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
                 }
             }
         }
