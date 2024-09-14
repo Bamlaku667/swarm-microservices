@@ -2,8 +2,7 @@ version: '3.8'
 
 services:
   auth-service:
-    image: auth-service:latest
-    build: ./auth-service
+    image: bamlakhiruy/auth-service:latest
     ports:
       - "3001:3000"
     deploy:
@@ -13,8 +12,7 @@ services:
         delay: 10s
 
   transaction-service:
-    image: transaction-service:latest
-    build: ./transaction-service
+    image: bamlakhiruy/transaction-service:latest
     ports:
       - "3002:3000"
     deploy:
@@ -24,8 +22,7 @@ services:
         delay: 10s
 
   user-service:
-    image: user-service:latest
-    build: ./user-service
+    image: bamlakhiruy/user-service:latest
     ports:
       - "3003:3000"
     deploy:
@@ -33,4 +30,3 @@ services:
       update_config:
         parallelism: 2
         delay: 10s
-
