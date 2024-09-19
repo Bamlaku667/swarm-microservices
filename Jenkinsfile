@@ -1,80 +1,53 @@
 pipeline {
     agent any
-
     environment {
-        SWARM_MANAGER_IP = '192.168.0.138'
-        DOCKERHUB_USERNAME = 'bamlakhiruy' // Your Docker Hub username
+        SWARM_MANAGER = "tcp://172.30.0.2:2375"  // Docker API on the Swarm manager (primary node)
+        DOCKER_IMAGE_VERSION = "${env.BUILD_ID}" // Unique image tag based on Jenkins build ID
     }
-
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
+                // Checkout code from GitHub using SCM
                 checkout scm
             }
         }
-
-        stage('Test Docker') {
-            steps {
-                sh 'docker --version'
-            }
-        }
-
         stage('Build Docker Images') {
             steps {
                 script {
-                    def services = ['auth-service', 'transaction-service', 'user-service']
-                    services.each { service ->
-                        docker.build("${service}:latest", "./${service}")
-                        // Tag the image for Docker Hub
-                        sh "docker tag ${service}:latest ${DOCKERHUB_USERNAME}/${service}:latest"
+                    // Build Docker images for each service
+                    dir('auth-service') {
+                        docker.build("auth-service:${DOCKER_IMAGE_VERSION}")
+                    }
+                    dir('transaction-service') {
+                        docker.build("transaction-service:${DOCKER_IMAGE_VERSION}")
+                    }
+                    dir('user-service') {
+                        docker.build("user-service:${DOCKER_IMAGE_VERSION}")
                     }
                 }
             }
         }
-
-        stage('Login to Docker Hub') {
-            steps {
-                // Use stored credentials for Docker Hub login without interpolation
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-                    sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
-                }
-            }
-        }
-
-        stage('Push Docker Images to Docker Hub') {
-            steps {
-                script {
-                    def services = ['auth-service', 'transaction-service', 'user-service']
-                    services.each { service ->
-                        // Check if the image already exists on Docker Hub
-                        def imageExists = sh(script: "docker pull ${DOCKERHUB_USERNAME}/${service}:latest || true", returnStatus: true) == 0
-                        if (!imageExists) {
-                            echo "Pushing ${DOCKERHUB_USERNAME}/${service}:latest to Docker Hub"
-                            // Push the image only if it doesn't exist
-                            sh "docker push ${DOCKERHUB_USERNAME}/${service}:latest"
-                        } else {
-                            echo "Image ${DOCKERHUB_USERNAME}/${service}:latest already exists, skipping push"
-                        }
-                    }
-                }
-            }
-        }
-
         stage('Deploy to Swarm') {
             steps {
                 script {
-                    // Deploy the stack
-                    sh """
-                    docker stack deploy -c docker-compose.yml microservices-stack
-                    """
+                    // Connect to the Swarm Manager on the primary node and deploy the services
+                    withDockerServer([uri: "${SWARM_MANAGER}"]) {
+                        sh """
+                        # Deploy/Update auth-service
+                        docker service update --image auth-service:${DOCKER_IMAGE_VERSION} auth-service || \
+                        docker service create --name auth-service --replicas 3 --publish 3001:3000 auth-service:${DOCKER_IMAGE_VERSION}
+                        
+                        # Deploy/Update transaction-service
+                        docker service update --image transaction-service:${DOCKER_IMAGE_VERSION} transaction-service || \
+                        docker service create --name transaction-service --replicas 3 --publish 3002:3000 transaction-service:${DOCKER_IMAGE_VERSION}
+                        
+                        # Deploy/Update user-service
+                        docker service update --image user-service:${DOCKER_IMAGE_VERSION} user-service || \
+                        docker service create --name user-service --replicas 3 --publish 3003:3000 user-service:${DOCKER_IMAGE_VERSION}
+                        """
+                    }
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            cleanWs()
         }
     }
 }
